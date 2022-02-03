@@ -140,11 +140,11 @@ public class CryptUtil {
      */
     public static byte[] cs4440Encrypt(byte[] data, Byte key) {
         // TODO
-	byte[] cipherdata = new byte[8];
-	
-	//Your code here
+        byte[] cipherdata = new byte[8];
 
-	return cipherdata;
+        //Your code here
+
+        return cipherdata;
     }
 
     /**
@@ -174,11 +174,11 @@ public class CryptUtil {
 
     public static byte[] cs4440Decrypt(byte[] data, Byte key) {
         // TODO
-	byte[] plaindata = new byte[8];
-	
-	//Your code here
+        byte[] plaindata = new byte[8];
 
-	return plaindata;
+        //Your code here
+
+        return plaindata;
 
         //return 0;
     }
@@ -189,7 +189,7 @@ public class CryptUtil {
      * @param cipherfilepath
      * @param key
      */
-    public static int decryptDoc(String plainfilepath, String cipherfilepath, Byte key) {
+    public static int decryptDoc(String cipherfilepath, String plainfilepath, Byte key) {
         // TODO
         return 0;
     }
@@ -237,7 +237,7 @@ public class CryptUtil {
             System.out.printf("[*] Shannon entropy of encrypted message (Bytes): %.12f%n", entropyBytes);
 
             byte[] decrypted = CryptUtil.cs4440Decrypt(encrypted, key);
-	    if (Arrays.equals(decrypted, src.getBytes())){
+            if (Arrays.equals(decrypted, src.getBytes())){
                 System.out.println("[+] It works!  decrypted ： " + decrypted);
             } else {
                 System.out.println("Decrypted message does not match!");
