@@ -1,4 +1,5 @@
 
+import java.awt.*;
 import java.io.*;
 import java.util.Random;
 import java.nio.file.Files;
@@ -16,6 +17,11 @@ import javax.crypto.SecretKeyFactory;
 
 
 public class CryptUtil {
+
+    private static int NUMCUPS = 24;
+    private static int SUGARVALUE = 0x9E3779B9;
+    private static int UNSUGARVALUE = 0xC6EF3720;
+
 
     public static byte[] createSha1(File file) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-1");
@@ -139,12 +145,109 @@ public class CryptUtil {
      * @return encrypted bytes
      */
     public static byte[] cs4440Encrypt(byte[] data, Byte key) {
-        // TODO
-        byte[] cipherdata = new byte[8];
+        int[] fullKey = prepareKey(key);
+        int paddingSize = ((data.length / 8) + (((data.length % 8) == 0) ? 0 : 1)) * 2;
+        int[] result = setup(data, paddingSize, 0);
+        result = brew(result, fullKey);
+        return unsetup(result, 0, result.length * 4);
+    }
 
-        //Your code here
+    /**
+     * Helper method to convert 1 byte key into 16 byte key for ease of translation of TEA
+     *
+     * @param key key to convert to 16 byte key
+     * @return array containing full key
+     */
+    private static int[] prepareKey(Byte key) {
+        int[] fullKey = new int[16];
+        int[] result = new int[4];
+        Arrays.fill(fullKey, key);
+        int offset = 0;
+        for (int i = 0; i < 4; ++i) {
+            result[i] = ((fullKey[offset] & 0xff)) |
+                    ((fullKey[offset + 1] & 0xff) << 8) |
+                    ((fullKey[offset + 2] & 0xff) << 16) |
+                    ((fullKey[offset + 3] & 0xff) << 24);
+            offset += 4;
+        }
+        return result;
+    }
 
-        return cipherdata;
+
+    private static int[] setup(byte[] data, int paddingSize, int dataOffset) {
+        int shiftNum = 24;
+        int j = dataOffset;
+        int[] result = new int[paddingSize + 1];
+        result[0] = data.length;
+        result[j] = 0;
+
+        for (int i = 0; i < data.length; ++i) {
+            result[j] |= ((data[i] & 0xff) << shiftNum);
+            if (shiftNum == 0) {
+                shiftNum = 24;
+                j++;
+                if (j < result.length) {
+                    result[j] = 0;
+                } else {
+                    shiftNum -= 8;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static byte[] unsetup(int[] data, int offset, int length) {
+        byte[] result = new byte[length];
+
+        int j = 0, count = 0;
+        for (int i = 0; i < result.length; i++) {
+            result[i] = (byte) ((data[j] >> (24 - (8 * count))) & 0xff);
+            count++;
+            if (count == 4) {
+                count = 0;
+                j++;
+            }
+        }
+
+        return result;
+    }
+
+    private static int[] brew(int[] result, int[] key) {
+        int numCups, temp1, temp2, sum;
+        for (int i = 1; i < result.length; i += 2) {
+            numCups = NUMCUPS;
+            temp1 = result[i];
+            temp2 = result[i + 1];
+            sum = 0;
+            for (; numCups > 0; --numCups) {
+                sum += SUGARVALUE;
+                temp1 += ((temp2 << 4) + key[0] ^ temp2) + (sum ^ (temp2 >>> 5)) + key[1];
+                temp2 += ((temp1 << 4) + key[2] ^ temp1) + (sum ^ (temp1 >>> 5)) + key[3];
+            }
+            result[i] = temp1;
+            result[i + 1] = temp2;
+        }
+        return result;
+    }
+
+    private static int[] unbrew(int[] result, int[] key) {
+        System.out.println(result.length % 2 == 1);
+        int numCups, temp1, temp2, sum;
+        for (int i = 1; i < result.length; i += 2) {
+            numCups = NUMCUPS;
+            temp1 = result[i];
+            temp2 = result[i + 1];
+            sum = UNSUGARVALUE;
+            for (; numCups > 0; --numCups) {
+                temp2 -= ((temp1 << 4) + key[2] ^ temp1) + (sum ^ (temp1 >>> 5)) + key[3];
+                temp1 -= ((temp2 << 4) + key[0] ^ temp2) + (sum ^ (temp2 >>> 5)) + key[1];
+                sum -= SUGARVALUE;
+            }
+            result[i] = temp1;
+            result[i + 1] = temp2;
+        }
+        return result;
     }
 
     /**
@@ -173,18 +276,15 @@ public class CryptUtil {
      */
 
     public static byte[] cs4440Decrypt(byte[] data, Byte key) {
-        // TODO
-        byte[] plaindata = new byte[8];
-
-        //Your code here
-
-        return plaindata;
-
-        //return 0;
+        int[] fullKey = prepareKey(key);
+        int[] result = setup(data, data.length / 4, 0);
+        result = unbrew(result, fullKey);
+        return unsetup(result, 1, result[0]);
     }
 
     /**
      * Decryption (file)
+     *
      * @param plainfilepath
      * @param cipherfilepath
      * @param key
@@ -237,7 +337,7 @@ public class CryptUtil {
             System.out.printf("[*] Shannon entropy of encrypted message (Bytes): %.12f%n", entropyBytes);
 
             byte[] decrypted = CryptUtil.cs4440Decrypt(encrypted, key);
-            if (Arrays.equals(decrypted, src.getBytes())){
+            if (Arrays.equals(decrypted, src.getBytes())) {
                 System.out.println("[+] It works!  decrypted ： " + decrypted);
             } else {
                 System.out.println("Decrypted message does not match!");
