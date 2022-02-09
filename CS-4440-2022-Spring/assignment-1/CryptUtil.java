@@ -147,8 +147,10 @@ public class CryptUtil {
     public static byte[] cs4440Encrypt(byte[] data, Byte key) {
         int[] fullKey = prepareKey(key);
         int paddingSize = ((data.length / 8) + (((data.length % 8) == 0) ? 0 : 1)) * 2;
-        int[] result = setup(data, paddingSize, 0);
-        result = brew(result, fullKey);
+        int[] result = new int[paddingSize + 1];
+        result[0] = data.length;
+        setup(data, result, 1);
+        brew(result, fullKey);
         return unsetup(result, 0, result.length * 4);
     }
 
@@ -174,80 +176,75 @@ public class CryptUtil {
     }
 
 
-    private static int[] setup(byte[] data, int paddingSize, int dataOffset) {
+    private static void setup(byte[] data, int[] result, int dataOffset) {
         int shiftNum = 24;
+        int i = 0;
         int j = dataOffset;
-        int[] result = new int[paddingSize + 1];
-        result[0] = data.length;
         result[j] = 0;
-
-        for (int i = 0; i < data.length; ++i) {
+        while (i < data.length) {
             result[j] |= ((data[i] & 0xff) << shiftNum);
             if (shiftNum == 0) {
                 shiftNum = 24;
                 j++;
                 if (j < result.length) {
                     result[j] = 0;
-                } else {
-                    shiftNum -= 8;
                 }
+            } else {
+                shiftNum -= 8;
             }
+            i++;
         }
-
-        return result;
     }
 
     private static byte[] unsetup(int[] data, int offset, int length) {
         byte[] result = new byte[length];
 
-        int j = 0, count = 0;
-        for (int i = 0; i < result.length; i++) {
-            result[i] = (byte) ((data[j] >> (24 - (8 * count))) & 0xff);
+        int i = offset;
+        int count = 0;
+        for (int j = 0; j < result.length; j++) {
+            result[j] = (byte) ((data[i] >> (24 - (8 * count))) & 0xff);
             count++;
             if (count == 4) {
                 count = 0;
-                j++;
+                i++;
             }
         }
-
         return result;
     }
 
-    private static int[] brew(int[] result, int[] key) {
-        int numCups, temp1, temp2, sum;
+    private static void brew(int[] result, int[] key) {
+        int numCups, temp0, temp1, sum;
         for (int i = 1; i < result.length; i += 2) {
             numCups = NUMCUPS;
-            temp1 = result[i];
-            temp2 = result[i + 1];
+            temp0 = result[i];
+            temp1 = result[i + 1];
             sum = 0;
             for (; numCups > 0; --numCups) {
                 sum += SUGARVALUE;
-                temp1 += ((temp2 << 4) + key[0] ^ temp2) + (sum ^ (temp2 >>> 5)) + key[1];
-                temp2 += ((temp1 << 4) + key[2] ^ temp1) + (sum ^ (temp1 >>> 5)) + key[3];
+                temp0 += ((temp1 << 4) + key[0] ^ temp1) + (sum ^ (temp1 >>> 5)) + key[1];
+                temp1 += ((temp0 << 4) + key[2] ^ temp0) + (sum ^ (temp0 >>> 5)) + key[3];
             }
-            result[i] = temp1;
-            result[i + 1] = temp2;
+            result[i] = temp0;
+            result[i + 1] = temp1;
         }
-        return result;
     }
 
-    private static int[] unbrew(int[] result, int[] key) {
-        System.out.println(result.length % 2 == 1);
-        int numCups, temp1, temp2, sum;
+    private static void unbrew(int[] result, int[] key) {
+
+        int numCups, temp0, temp1, sum;
         for (int i = 1; i < result.length; i += 2) {
             numCups = NUMCUPS;
-            temp1 = result[i];
-            temp2 = result[i + 1];
+            temp0 = result[i];
+            temp1 = result[i + 1];
             sum = UNSUGARVALUE;
             for (; numCups > 0; --numCups) {
-                temp2 -= ((temp1 << 4) + key[2] ^ temp1) + (sum ^ (temp1 >>> 5)) + key[3];
-                temp1 -= ((temp2 << 4) + key[0] ^ temp2) + (sum ^ (temp2 >>> 5)) + key[1];
+                temp1 -= ((temp0 << 4) + key[2] ^ temp0) + (sum ^ (temp0 >>> 5)) + key[3];
+                temp0 -= ((temp1 << 4) + key[0] ^ temp1) + (sum ^ (temp1 >>> 5)) + key[1];
                 sum -= SUGARVALUE;
             }
-            result[i] = temp1;
-            result[i + 1] = temp2;
+            result[i] = temp0;
+            result[i + 1] = temp1;
         }
-        return result;
     }
 
     /**
@@ -277,9 +274,10 @@ public class CryptUtil {
 
     public static byte[] cs4440Decrypt(byte[] data, Byte key) {
         int[] fullKey = prepareKey(key);
-        int[] result = setup(data, data.length / 4, 0);
-        result = unbrew(result, fullKey);
-        return unsetup(result, 1, result[0]);
+        int[] result = new int[data.length / 4];
+        setup(data, result, 0);
+        unbrew(result, fullKey);
+        return unsetup(result, 1, data[0]);
     }
 
     /**
