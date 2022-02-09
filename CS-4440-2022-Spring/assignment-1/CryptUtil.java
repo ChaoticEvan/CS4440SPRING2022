@@ -145,6 +145,7 @@ public class CryptUtil {
      * @return encrypted bytes
      */
     public static byte[] cs4440Encrypt(byte[] data, Byte key) {
+        System.out.println(data);
         int[] fullKey = prepareKey(key);
         int paddingSize = ((data.length / 8) + (((data.length % 8) == 0) ? 0 : 1)) * 2;
         int[] result = new int[paddingSize + 1];
@@ -277,7 +278,7 @@ public class CryptUtil {
         int[] result = new int[data.length / 4];
         setup(data, result, 0);
         unbrew(result, fullKey);
-        return unsetup(result, 1, data[0]);
+        return unsetup(result, 1, result[0]);
     }
 
     /**
