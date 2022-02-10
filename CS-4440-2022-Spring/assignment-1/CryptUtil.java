@@ -18,7 +18,7 @@ import javax.crypto.SecretKeyFactory;
 
 public class CryptUtil {
 
-    private static int NUMCUPS = 24;
+    private static int NUMCUPS = 32;
     private static int SUGARVALUE = 0x9E3779B9;
     private static int UNSUGARVALUE = 0xC6EF3720;
 
@@ -145,7 +145,6 @@ public class CryptUtil {
      * @return encrypted bytes
      */
     public static byte[] cs4440Encrypt(byte[] data, Byte key) {
-        System.out.println(data);
         int[] fullKey = prepareKey(key);
         int paddingSize = ((data.length / 8) + (((data.length % 8) == 0) ? 0 : 1)) * 2;
         int[] result = new int[paddingSize + 1];
@@ -176,7 +175,12 @@ public class CryptUtil {
         return result;
     }
 
-
+    /**
+     * Helper method to setup encryption process
+     * @param data data to encrypt
+     * @param result array to hold resulting array
+     * @param dataOffset offset index
+     */
     private static void setup(byte[] data, int[] result, int dataOffset) {
         int shiftNum = 24;
         int i = 0;
@@ -197,9 +201,15 @@ public class CryptUtil {
         }
     }
 
+    /**
+     * Helper method to reverse the setup process
+     * @param data data array to edit
+     * @param offset offset index
+     * @param length length of resulting array
+     * @return returns unsetup byte[]
+     */
     private static byte[] unsetup(int[] data, int offset, int length) {
         byte[] result = new byte[length];
-
         int i = offset;
         int count = 0;
         for (int j = 0; j < result.length; j++) {
@@ -213,6 +223,11 @@ public class CryptUtil {
         return result;
     }
 
+    /**
+     * Helper method to encrypt plaintext
+     * @param result plaintext to encrypt
+     * @param key to use in encryption process
+     */
     private static void brew(int[] result, int[] key) {
         int numCups, temp0, temp1, sum;
         for (int i = 1; i < result.length; i += 2) {
@@ -230,6 +245,11 @@ public class CryptUtil {
         }
     }
 
+    /**
+     * Helper method used to decrypt the cipher text
+     * @param result ciphertext to decrypt
+     * @param key key to decrypt
+     */
     private static void unbrew(int[] result, int[] key) {
 
         int numCups, temp0, temp1, sum;
