@@ -277,12 +277,110 @@ public class CryptUtil {
      */
     public static int encryptDoc(String plainfilepath, String cipherfilepath, Byte key) {
         try {
-            // TODO
+            // Init file
+            File file = new File(plainfilepath);
+            byte[] content = Files.readAllBytes(file.toPath());
+
+            // Pad array if needed
+            if(content.length < 8) {
+                content = padding(content);
+            }
+
+            // Cipher block chaining
+            File outputFile = new File(cipherfilepath);
+            byte[] outputContent = cs4440Encrypt(content, key);
+            try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+                outputStream.write(outputContent);
+            }
             return 0;
 
         } catch (Exception e) {
             return -1;
         }
+    }
+
+    /**
+     * Helper method to pad out byte[] via PKCS5
+     * @param content byte array to pad
+     * @return returns padded byte array
+     */
+    private static byte[] padding(byte[] content) {
+        int diff = 8 - content.length;
+        byte[] result = new byte[8];
+        switch (diff) {
+            case 1:
+                result[0] = content[0];
+                result[1] = content[1];
+                result[2] = content[2];
+                result[3] = content[3];
+                result[4] = content[4];
+                result[5] = content[5];
+                result[6] = content[6];
+                result[7] = 0x01;
+                return result;
+            case 2:
+                result[0] = content[0];
+                result[1] = content[1];
+                result[2] = content[2];
+                result[3] = content[3];
+                result[4] = content[4];
+                result[5] = content[5];
+                result[6] = 0x02;
+                result[7] = 0x02;
+                return result;
+            case 3:
+                result[0] = content[0];
+                result[1] = content[1];
+                result[2] = content[2];
+                result[3] = content[3];
+                result[4] = content[4];
+                result[5] = 0x03;
+                result[6] = 0x03;
+                result[7] = 0x03;
+                return result;
+            case 4:
+                result[0] = content[0];
+                result[1] = content[1];
+                result[2] = content[2];
+                result[3] = content[3];
+                result[4] = 0x04;
+                result[5] = 0x04;
+                result[6] = 0x04;
+                result[7] = 0x04;
+                return result;
+            case 5:
+                result[0] = content[0];
+                result[1] = content[1];
+                result[2] = content[2];
+                result[3] = 0x05;
+                result[4] = 0x05;
+                result[5] = 0x05;
+                result[6] = 0x05;
+                result[7] = 0x05;
+                return result;
+            case 6:
+                result[0] = content[0];
+                result[1] = content[1];
+                result[2] = 0x06;
+                result[3] = 0x06;
+                result[4] = 0x06;
+                result[5] = 0x06;
+                result[6] = 0x06;
+                result[7] = 0x06;
+                return result;
+            case 7:
+                result[0] = content[0];
+                result[1] = 0x07;
+                result[2] = 0x07;
+                result[3] = 0x07;
+                result[4] = 0x07;
+                result[5] = 0x07;
+                result[6] = 0x07;
+                result[7] = 0x07;
+                return result;
+        }
+        // We only get here if diff is 8, meaning that content is empty
+        return content;
     }
 
     /**
