@@ -407,8 +407,21 @@ public class CryptUtil {
      * @param key
      */
     public static int decryptDoc(String cipherfilepath, String plainfilepath, Byte key) {
-        // TODO
-        return 0;
+        try {
+            File file = new File(cipherfilepath);
+            byte[] cipher = Files.readAllBytes(file.toPath());
+
+            File outputFile = new File(plainfilepath);
+            byte[] outputContent = cs4440Decrypt(cipher, key);
+            try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+                outputStream.write(outputContent);
+            }
+
+            return 0;
+        }
+        catch (Exception e) {
+            return -1;
+        }
     }
 
     public static void main(String[] args) {
